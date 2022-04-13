@@ -82,3 +82,51 @@ eureka:
 ![img_5.png](img_5.png)  
 ![img_7.png](img_7.png)  
 
+##### 动态路由  
+```yaml
+server:
+  port: 9527
+
+spring:
+  application:
+    name: cloud-gateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true #开启从注册中心动态创建路由的功能，利用微服务名进行路由
+      routes:
+        - id: payment_routh #payment_route    #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          uri: lb://cloud-payment-service         #匹配后提供服务的路由地址
+          predicates:
+            - Path=/payment/get/**         # 断言，路径相匹配的进行路由
+
+        - id: payment_routh2 #payment_route    #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          uri: lb://cloud-payment-service          #匹配后提供服务的路由地址
+          predicates:
+            - Path=/payment/lb/**         # 断言，路径相匹配的进行路由
+
+eureka:
+  instance:
+    hostname: cloud-gateway-service
+  client: #服务提供者provider注册进eureka服务列表内
+    service-url:
+      register-with-eureka: true
+      fetch-registry: true
+      defaultZone: http://localhost:7001/eureka
+```
+加了两个地方的配置,lb:负载均衡 load balancing
+```yaml
+      discovery:
+        locator:
+          enabled: true #开启从注册中心动态创建路由的功能，利用微服务名进行路由
+
+
+
+
+      uri: lb://cloud-payment-service #匹配后提供服务的路由地址
+```  
+![img_10.png](img_10.png)  
+![img_11.png](img_11.png)  
+实现了网关层面服务的负载均衡  
