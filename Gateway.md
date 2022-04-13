@@ -130,3 +130,59 @@ eureka:
 ![img_10.png](img_10.png)  
 ![img_11.png](img_11.png)  
 实现了网关层面服务的负载均衡  
+
+##### Predicate  
+说白了，Predicate就是为了实现一组匹配规则，  
+让请求过来找到对应的Route进行处理。  
+
+```yaml
+predicates:
+      - Path=/payment/lb/**         # 断言，路径相匹配的进行路由
+      - After=2020-02-05T15:10:03.685+08:00[Asia/Shanghai]         # 在这个事件后
+      - Before=2020-02-05T15:10:03.685+08:00[Asia/Shanghai]         # 在这个事件前
+      - Between=2020-02-02T17:45:06.206+08:00[Asia/Shanghai],2020-03-25T18:59:06.206+08:00[Asia/Shanghai]
+      - Cookie=username,zzyy   #Cookie Route Predicate需要两个参数，一个是 Cookie name ,一个是正则表达式。路由规则会通过获取对应的 Cookie name 值和正则表达式去匹配，如果匹配上就会执行路由，如果没有匹配上则不执行
+      - Header=X-Request-Id, \d+  # 请求头要有X-Request-Id属性并且值为整数的正则表达式
+      - Host=**.atguigu.com    #Host Route Predicate 接收一组参数，一组匹配的域名列表，这个模板是一个 ant 分隔的模板，用.号作为分隔符。它通过参数中的主机地址作为匹配规则。
+      - Method=GET
+      - Query=username, \d+  # 要有参数名username并且值还要是整数才能路由
+```
+
+
+##### Filter 
+路由过滤器可用于修改进入的HTTP请求和返回的HTTP响应，路由过滤器只能指定路由进行使用。  
+Spring Cloud Gateway 内置了多种路由过滤器，他们都由GatewayFilter的工厂类来产生  
+
+###### 自定义过滤器  
+1. 实现两个接口
+```implements GlobalFilter,Ordered```  
+2. 案例  
+```java
+@Component
+public class MyGatewayFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain)
+    {
+        System.out.println("time:"+new Date()+"\t 执行了自定义的全局过滤器: "+"MyLogGateWayFilter"+"hello");
+
+        String uname = exchange.getRequest().getQueryParams().getFirst("uname");
+        if (uname == null) {
+            System.out.println("****用户名为null，无法登录");
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_ACCEPTABLE);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+    //filter优先级
+    @Override
+    public int getOrder()
+    {
+        return 0;
+    }
+
+}
+```  
+有uname参数就访问   
+![img_12.png](img_12.png)  
+没有uname参数就访问不了  
+![img_13.png](img_13.png)  
